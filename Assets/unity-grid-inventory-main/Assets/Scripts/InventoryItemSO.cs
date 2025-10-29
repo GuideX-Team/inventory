@@ -1,0 +1,32 @@
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "New InventoryItemSO", menuName = "SO/InventoryItemSO")]
+public class InventoryItemSO : ScriptableObject, IStaticInventoryItem
+{
+    [SerializeField]
+    private string _id;
+
+    [SerializeField]
+    private Vector2Int _gridSize;
+
+    [SerializeField]
+    private Sprite _sprite;
+
+    [SerializeField]
+    private bool _isEquippable;
+
+    [SerializeField]
+    private EquipmentSlotType _equipSlot;
+
+    public string Id => _id;
+    public int Width => _gridSize.x;
+    public int Height => _gridSize.y;
+    public Sprite Sprite => _sprite;
+    public bool IsEquippable => _isEquippable;
+    public EquipmentSlotType EquipSlot => _equipSlot;
+
+    public void SetSprite(Sprite sprite)
+    {
+        _sprite = sprite;
+    }
+}

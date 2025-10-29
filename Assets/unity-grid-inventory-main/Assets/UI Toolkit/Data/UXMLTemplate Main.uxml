@@ -1,0 +1,107 @@
+ <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+     <ui:VisualElement style="width: 100%; height: 100%; flex-direction: row;">
+         <!-- Left: Equipment -->
+         <ui:VisualElement name="ve-equipment" style="width: 340px; padding: 8px;">
+             <ui:Label text="Equipment" style="unity-font-style: bold; margin-bottom: 8px; font-size: 16px;" />
+             <ui:VisualElement style="flex-direction: row; flex-wrap: wrap; gap: 8px;">
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Helmet" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-Head">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Vest" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-Vest">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Shirt" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-Shirt">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Pants" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-Pants">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Socks" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-Socks">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Boots" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-Boots">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Main Hand" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-MainHand">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+                 <ui:VisualElement style="width: 150px;">
+                     <ui:Label text="Off Hand" style="margin-bottom: 4px;" />
+                     <InventoryGridCollectionElement name="equip-OffHand">
+                         <ui:ScrollView style="width: 124px; height: 124px;">
+                             <ui:VisualElement name="ve-cells-content" style="width: 100%; height: 100%; flex-direction: row; flex-wrap: wrap;" />
+                             <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                         </ui:ScrollView>
+                     </InventoryGridCollectionElement>
+                 </ui:VisualElement>
+             </ui:VisualElement>
+         </ui:VisualElement>
+
+         <!-- Center: Inventory -->
+         <ui:VisualElement style="flex-grow: 1; padding: 8px;">
+             <ui:Label text="Inventory" style="unity-font-style: bold; margin-bottom: 8px; font-size: 16px;" />
+             <InventoryGridCollectionElement name="inventory-stash" style="height: 90%;">
+                 <ui:ScrollView style="width: 500px; height: 100%;">
+                     <ui:VisualElement name="ve-cells-content" style="width: 200px; height: 200px; flex-direction: row; flex-wrap: wrap;" />
+                     <ui:VisualElement name="ve-items-content" style="position: absolute; width: 100%; height: 100%;" />
+                 </ui:ScrollView>
+             </InventoryGridCollectionElement>
+         </ui:VisualElement>
+
+         <!-- Right: Items and Controls -->
+         <ui:VisualElement style="width: 380px; padding: 8px;">
+             <ui:Label text="Items" style="unity-font-style: bold; margin-bottom: 8px; font-size: 16px;" />
+             <ui:TextField value="filler text" text="filler text" picking-mode="Ignore" style="height: 40px; font-size: 16px; margin-bottom: 8px;" />
+             <ui:ScrollView name="item-scroll-list" style="width: 100%; height: 640px;" />
+             <ui:VisualElement style="flex-direction: row; gap: 8px; margin-top: 8px;">
+                 <ui:Button text="Save" name="btn-save" style="height: 40px;" />
+                 <ui:Button text="Load" name="btn-load" style="height: 40px;" />
+             </ui:VisualElement>
+         </ui:VisualElement>
+
+         <!-- Overlay windows (backpacks etc.) stay on top of all -->
+         <ui:VisualElement name="ve-backpack-windows-content" picking-mode="Ignore" style="position: absolute; width: 100%; height: 100%;" />
+     </ui:VisualElement>
+ </ui:UXML>
