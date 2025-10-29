@@ -53,7 +53,6 @@ public sealed class InventoryGridCollectionElement : VisualElement
         _itemFactory = itemFactory;
 
         _scrollView = this.Q<ScrollView>();
-        _scrollView.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
 
         var scrollContent = _scrollView.Q<VisualElement>("unity-content-container");
         _cellsContentParentElement = scrollContent[0];
@@ -74,7 +73,12 @@ public sealed class InventoryGridCollectionElement : VisualElement
             new Length(pixelGridHeight, LengthUnit.Pixel)
         );
 
-        var totalPixelWidth = pixelGridWidth + 24;
+        var hasScrollbar = !(gridSize.x == 1 && gridSize.y == 1);
+        _scrollView.verticalScrollerVisibility = hasScrollbar
+            ? ScrollerVisibility.AlwaysVisible
+            : ScrollerVisibility.Hidden;
+
+        var totalPixelWidth = pixelGridWidth + (hasScrollbar ? 24 : 0);
 
         _scrollView.style.width = new StyleLength(new Length(totalPixelWidth, LengthUnit.Pixel));
 
@@ -200,6 +204,10 @@ public sealed class InventoryGridCollectionElement : VisualElement
         for (int i = 0; i < inventory.Items.Count; i++)
         {
             var newElement = _itemFactory(inventory.Items[i]);
+            if (inventory.TreatAllItemsAsUnit)
+            {
+                newElement.OverrideGridSize(_cellSize, new Vector2Int(1, 1));
+            }
             _itemsContentParentElement.Add(newElement);
         }
     }

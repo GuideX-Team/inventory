@@ -37,6 +37,12 @@ public abstract class Inventory<T> : IInventory
     public Inventory(Vector2Int size)
         : this(size.x, size.y) { }
 
+    protected virtual void GetItemSizeForPlacement(IStaticInventoryItem item, bool rotated, out int width, out int height)
+    {
+        width = !rotated ? item.Width : item.Height;
+        height = !rotated ? item.Height : item.Width;
+    }
+
     public bool AddItem(IStaticInventoryItem item, out T newItem)
     {
         newItem = null;
@@ -200,8 +206,8 @@ public abstract class Inventory<T> : IInventory
         }
 
         var item = inventoryItem.Item;
-        var width = !rotated ? item.Width : item.Height;
-        var height = !rotated ? item.Height : item.Width;
+        int width, height;
+        GetItemSizeForPlacement(item, rotated, out width, out height);
 
         if (!IsAreaEmpty(x, y, width, height))
         {
@@ -209,7 +215,7 @@ public abstract class Inventory<T> : IInventory
         }
 
         // todo: avoid allocation ?
-        var indexes = new int[item.Width * item.Height];
+        var indexes = new int[width * height];
         PopulateIndexes(x, y, width, height, indexes);
 
         inventoryItem.GridPosition = new Vector2Int(x, y);
@@ -366,8 +372,8 @@ public abstract class Inventory<T> : IInventory
         }
 
         var item = inventoryItem.Item;
-        var width = !rotated ? item.Width : item.Height;
-        var height = !rotated ? item.Height : item.Width;
+        int width, height;
+        GetItemSizeForPlacement(item, rotated, out width, out height);
 
         if (!IsAreaEmptyOrOccupiedByItem(x, y, width, height, inventoryItem))
         {

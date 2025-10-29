@@ -35,6 +35,12 @@ public sealed class InventoryItemElement : VisualElement
         _nameLabel = this.Q<Label>("label-name");
     }
 
+    public void OverrideGridSize(int cellSize, Vector2Int itemGridSize)
+    {
+        _pixelSize = cellSize * itemGridSize;
+        RefreshRotatedState(_isRotated);
+    }
+
     public void SetSprite(Sprite sprite)
     {
         _imageElement.style.backgroundImage = new StyleBackground(sprite);

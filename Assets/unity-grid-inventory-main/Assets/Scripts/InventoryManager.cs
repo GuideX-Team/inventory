@@ -207,75 +207,183 @@ public sealed class InventoryManager : MonoBehaviour
         return false;
     }
 
-    public bool MoveItemToInventory(
-        string dynamicItemId,
-        string destinationInventoryId,
-        Vector2Int gridPosition,
-        bool rotated
-    )
+public bool MoveItemToInventory(
+    string dynamicItemId,
+    string destinationInventoryId,
+    Vector2Int gridPosition,
+    bool rotated
+)
+{
+    var inventoryItem =
+        GetDynamicItemById(dynamicItemId, out var parentInventory) as InventoryItem;
+
+    if (inventoryItem == null)
     {
-        var inventoryItem =
-            GetDynamicItemById(dynamicItemId, out var parentInventory) as InventoryItem;
+        return false;
+    }
 
-        if (inventoryItem == null)
+    TetrisInventory destinationInventory;
+    bool isEquipmentSlot = false;
+
+    if (destinationInventoryId != null)
+    {
+        if (_equipmentInventories.TryGetValue(destinationInventoryId, out var equipmentInv))
         {
-            return false;
-        }
+            destinationInventory = equipmentInv;
+            isEquipmentSlot = true;
 
-        TetrisInventory destinationInventory;
+            var staticItem = inventoryItem.Item as InventoryItemSO;
+            var slot = ParseSlotFromInventoryId(destinationInventoryId);
+            var sizeOk = gridPosition == Vector2Int.zero; // equipment treats any item as 1x1
+            var typeOk = staticItem != null && staticItem.IsEquippable && staticItem.EquipSlot == slot;
 
-        if (destinationInventoryId != null)
-        {
-            if (_equipmentInventories.TryGetValue(destinationInventoryId, out var equipmentInv))
+            if (!sizeOk || !typeOk)
             {
-                destinationInventory = equipmentInv;
-
-                var staticItem = inventoryItem.Item as InventoryItemSO;
-                var slot = ParseSlotFromInventoryId(destinationInventoryId);
-                var sizeOk = inventoryItem.Item.Width == 1
-                    && inventoryItem.Item.Height == 1
-                    && gridPosition == Vector2Int.zero;
-                var typeOk = staticItem == null || !staticItem.IsEquippable || staticItem.EquipSlot == slot;
-
-                if (!sizeOk || !typeOk)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                var dynamicItemDropTarget = GetDynamicItemById(destinationInventoryId);
-
-                if (
-                    dynamicItemDropTarget == null
-                    || dynamicItemDropTarget is not IDynamicBackpackInventoryItem backpackItem
-                )
-                {
-                    return false;
-                }
-
-                if (inventoryItem == backpackItem)
-                {
-                    return false;
-                }
-
-                destinationInventory = backpackItem.Inventory as TetrisInventory;
+                return false;
             }
         }
         else
         {
-            destinationInventory = _inventory;
+            var dynamicItemDropTarget = GetDynamicItemById(destinationInventoryId);
+
+            if (
+                dynamicItemDropTarget == null
+                || dynamicItemDropTarget is not IDynamicBackpackInventoryItem backpackItem
+            )
+            {
+                return false;
+            }
+
+            if (inventoryItem == backpackItem)
+            {
+                return false;
+            }
+
+            destinationInventory = backpackItem.Inventory as TetrisInventory;
+        }
+    }
+    else
+    {
+        destinationInventory = _inventory;
+    }
+
+    // Если перемещаем в том же инвентаре - простое перемещение
+    if (parentInventory == destinationInventory)
+    {
+        return parentInventory.MoveItemByIdTo(
+            dynamicItemId,
+            gridPosition.x,
+            gridPosition.y,
+            rotated
+        );
+    }
+    else
+    {
+        // НОВАЯ ЛОГИКА: Проверяем, есть ли предмет в целевом слоте
+        InventoryItem existingItem = null;
+
+        // Для слотов экипировки (1x1)
+        if (isEquipmentSlot && destinationInventory.Items.Count > 0)
+        {
+            existingItem = destinationInventory.Items[0] as InventoryItem;
+        }
+        // Для обычных инвентарей - проверяем область
+        else if (!isEquipmentSlot)
+        {
+            var item = inventoryItem.Item;
+            int width = !rotated ? item.Width : item.Height;
+            int height = !rotated ? item.Height : item.Width;
+
+            // Находим предмет в целевой позиции
+            for (int i = 0; i < destinationInventory.Items.Count; i++)
+            {
+                var checkItem = destinationInventory.Items[i];
+                var checkPos = checkItem.GridPosition;
+
+                // Проверяем пересечение
+                if (gridPosition.x < checkPos.x + checkItem.Item.Width &&
+                    gridPosition.x + width > checkPos.x &&
+                    gridPosition.y < checkPos.y + checkItem.Item.Height &&
+                    gridPosition.y + height > checkPos.y)
+                {
+                    existingItem = checkItem as InventoryItem;
+                    break;
+                }
+            }
         }
 
-        if (parentInventory == destinationInventory)
+        // SWAP LOGIC: Если в целевом слоте есть предмет - меняем местами
+        if (existingItem != null)
         {
-            return parentInventory.MoveItemByIdTo(
-                dynamicItemId,
+            // Сохраняем данные существующего предмета
+            var existingPos = existingItem.GridPosition;
+            var existingRotated = existingItem.IsRotated;
+
+            // Удаляем оба предмета
+            if (!destinationInventory.RemoveItemById(existingItem.Id, out var _))
+            {
+                Debug.LogWarning("Failed to remove existing item during swap");
+                return false;
+            }
+
+            if (!parentInventory.RemoveItemById(inventoryItem.Id, out var _))
+            {
+                Debug.LogWarning("Failed to remove dragged item during swap");
+                // Пытаемся вернуть existingItem обратно
+                destinationInventory.AddExistingItemAt(existingItem, existingPos.x, existingPos.y, existingRotated);
+                return false;
+            }
+
+            // Добавляем перетаскиваемый предмет в целевой инвентарь
+            if (!destinationInventory.AddExistingItemAt(
+                inventoryItem,
                 gridPosition.x,
                 gridPosition.y,
                 rotated
-            );
+            ))
+            {
+                Debug.LogWarning("Failed to add dragged item to destination during swap");
+                // Откатываем изменения
+                parentInventory.AddExistingItemAt(inventoryItem, inventoryItem.GridPosition.x, inventoryItem.GridPosition.y, inventoryItem.IsRotated);
+                destinationInventory.AddExistingItemAt(existingItem, existingPos.x, existingPos.y, existingRotated);
+                return false;
+            }
+
+            // Пытаемся добавить существующий предмет в исходный инвентарь
+            // Для экипировки - в исходную позицию перетаскиваемого предмета
+            // Для обычного инвентаря - ищем свободное место
+            bool addedExisting = false;
+
+            if (isEquipmentSlot)
+            {
+                // Возвращаем в исходную позицию
+                addedExisting = parentInventory.AddExistingItemAt(
+                    existingItem,
+                    inventoryItem.GridPosition.x,
+                    inventoryItem.GridPosition.y,
+                    inventoryItem.IsRotated
+                );
+            }
+            else
+            {
+                // Пытаемся добавить в любое свободное место
+                addedExisting = parentInventory.AddExistingItem(existingItem);
+            }
+
+            if (!addedExisting)
+            {
+                Debug.LogWarning("Failed to add existing item to source inventory during swap - item may be lost!");
+                // В идеале нужно откатить всю операцию, но это сложно
+                // Можно попробовать добавить в целевой инвентарь
+                if (!destinationInventory.AddExistingItem(existingItem))
+                {
+                    Debug.LogError("CRITICAL: Item lost during swap operation!");
+                }
+            }
+
+            return true;
         }
+        // ОБЫЧНОЕ ПЕРЕМЕЩЕНИЕ: Если целевой слот пустой
         else
         {
             if (
@@ -297,9 +405,10 @@ public sealed class InventoryManager : MonoBehaviour
                 }
             }
         }
-
-        return false;
     }
+
+    return false;
+}
 
     private void InitializeEquipmentInventories()
     {
@@ -317,7 +426,9 @@ public sealed class InventoryManager : MonoBehaviour
     private void CreateEquipSlot(EquipmentSlotType slot)
     {
         var id = GetEquipmentInventoryId(slot);
-        _equipmentInventories[id] = new TetrisInventory(new Vector2Int(1, 1));
+        var inv = new TetrisInventory(new Vector2Int(1, 1));
+        inv.TreatAllItemsAsUnit = true;
+        _equipmentInventories[id] = inv;
     }
 
     public static string GetEquipmentInventoryId(EquipmentSlotType slot)

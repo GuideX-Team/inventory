@@ -382,8 +382,9 @@ public sealed class InventoryView : MonoBehaviour
             {
                 var staticItem = inventoryItem.Item as InventoryItemSO;
                 var slot = GetSlotFromEquipId(inventoryGridElement.DynamicId);
-                var sizeOk = width == 1 && height == 1 && _draggableGridPosition == Vector2Int.zero;
-                var typeOk = staticItem == null || !staticItem.IsEquippable || staticItem.EquipSlot == slot;
+                // Equipment: allow any item size, but enforce position at (0,0)
+                var sizeOk = _draggableGridPosition == Vector2Int.zero;
+                var typeOk = staticItem != null && staticItem.IsEquippable && staticItem.EquipSlot == slot;
                 allowed = sizeOk && typeOk;
             }
         }
@@ -546,6 +547,20 @@ public sealed class InventoryView : MonoBehaviour
         element.Setup(_cellSize);
         element.CreateGrid(new Vector2Int(1, 1), CreateCell, CreateItem);
         element.FitWidthAndHeight();
+
+        // Map UXML element names like "equip-Head" to internal ids like "equip:Head"
+        if (name.StartsWith("equip-"))
+        {
+            var slotName = name.Substring("equip-".Length);
+            if (System.Enum.TryParse<EquipmentSlotType>(slotName, out var slot))
+            {
+                var internalId = InventoryManager.GetEquipmentInventoryId(slot);
+                _equipmentElements[internalId] = element;
+                return;
+            }
+        }
+
+        // Fallback: store by given name (should not be used if naming is correct)
         _equipmentElements[name] = element;
     }
 
@@ -626,7 +641,8 @@ public sealed class InventoryView : MonoBehaviour
     private void HandleMouseReleasedDropOnItem(InventoryItemElement itemElementUnderMouse)
     {
         var targetDynamicItem = InventoryManager.Singleton.GetDynamicItemById(
-            itemElementUnderMouse.DynamicId
+            itemElementUnderMouse.DynamicId,
+            out var targetParentInventory
         );
 
         if (targetDynamicItem == null)
@@ -634,26 +650,106 @@ public sealed class InventoryView : MonoBehaviour
             return;
         }
 
-        if (targetDynamicItem is not IDynamicBackpackInventoryItem backpackItem)
+        // Case 1: dropping onto a backpack item → move dragged item inside that backpack
+        if (targetDynamicItem is IDynamicBackpackInventoryItem backpackItem)
+        {
+            var transferedSuccessfully = InventoryManager.Singleton.TransferItemToInventory(
+                _draggableElement.DynamicId,
+                backpackItem.Id
+            );
+
+            Debug.Log($"transferedSuccessfully: {transferedSuccessfully}");
+
+            if (transferedSuccessfully)
+            {
+                DestroyDraggedElement();
+            }
+            else
+            {
+                ResetDraggedElement();
+            }
+
+            ResetColorOfAllAvailableCells();
+            return;
+        }
+
+        // For non-backpack target items, try swap logic
+        var draggedDynamicItem = InventoryManager.Singleton.GetDynamicItemById(
+            _draggableElement.DynamicId,
+            out var sourceParentInventory
+        ) as IDynamicInventoryItem;
+
+        if (draggedDynamicItem == null)
         {
             ResetDraggedElement();
             ResetColorOfAllAvailableCells();
             return;
         }
 
-        var transferedSuccessfully = InventoryManager.Singleton.TransferItemToInventory(
-            _draggableElement.DynamicId,
-            backpackItem.Id
-        );
+        var draggedId = _draggableElement.DynamicId;
+        var targetId = itemElementUnderMouse.DynamicId;
+        var targetPos = targetDynamicItem.GridPosition;
+        var draggedRotated = _draggableElement.IsRotated;
 
-        Debug.Log($"transferedSuccessfully: {transferedSuccessfully}");
+        // Detect if target is in an equipment inventory and get its id key
+        string equipmentInventoryId = null;
+        foreach (var kvp in InventoryManager.Singleton.EquipmentInventories)
+        {
+            if (kvp.Value == targetParentInventory)
+            {
+                equipmentInventoryId = kvp.Key;
+                break;
+            }
+        }
 
-        if (transferedSuccessfully)
+        bool movedDragged;
+
+        if (equipmentInventoryId != null)
+        {
+            // Equip dragged into the same slot (position is always zero for 1x1 slots)
+            movedDragged = InventoryManager.Singleton.MoveItemToInventory(
+                draggedId,
+                equipmentInventoryId,
+                Vector2Int.zero,
+                rotated: false
+            );
+        }
+        else if (targetParentInventory == InventoryManager.Singleton.RootInventory)
+        {
+            // Swap inside stash: move dragged into target's cell
+            movedDragged = InventoryManager.Singleton.MoveItemToInventory(
+                draggedId,
+                destinationInventoryId: null,
+                gridPosition: targetPos,
+                rotated: draggedRotated
+            );
+        }
+        else
+        {
+            // Unknown/non-handled inventory (e.g., inside backpack grid) → fallback
+            ResetDraggedElement();
+            ResetColorOfAllAvailableCells();
+            return;
+        }
+
+        if (!movedDragged)
+        {
+            ResetDraggedElement();
+            ResetColorOfAllAvailableCells();
+            return;
+        }
+
+        // After placing dragged item, move the target item to the stash (first free cell)
+        var sentTargetToStash = InventoryManager.Singleton.TransferItemToInventory(targetId, null);
+
+        if (sentTargetToStash)
         {
             DestroyDraggedElement();
         }
         else
         {
+            // If we couldn't relocate the target, revert by resetting the dragged element visually
+            // (full transactional revert would require more plumbing)
             ResetDraggedElement();
         }
 
@@ -662,11 +758,22 @@ public sealed class InventoryView : MonoBehaviour
 
     private void HandleMouseReleasedDropOnGrid(InventoryGridCollectionElement gridElementUnderMouse)
     {
+        var destinationId = gridElementUnderMouse.DynamicId;
+        var gridPos = _draggableGridPosition;
+        var rotated = _draggableElement.IsRotated;
+
+        // If destination is an equipment grid, force position (0,0) and no rotation
+        if (destinationId != null && InventoryManager.Singleton.EquipmentInventories.ContainsKey(destinationId))
+        {
+            gridPos = Vector2Int.zero;
+            rotated = false;
+        }
+
         var result = InventoryManager.Singleton.MoveItemToInventory(
             _draggableElement.DynamicId,
-            gridElementUnderMouse.DynamicId,
-            _draggableGridPosition,
-            _draggableElement.IsRotated
+            destinationId,
+            gridPos,
+            rotated
         );
 
         Debug.Log(result);
