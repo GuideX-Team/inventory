@@ -1,9 +1,0 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Assets/UI%20Toolkit/Data/USS%20InventoryItemElement.uss?fileID=7433441132597879392&amp;guid=52e31c3801ae1d943b37910f661722c7&amp;type=3#USS InventoryItemElement" />
-    <InventoryItemElement class="inventory-item" style="width: 400px; height: 200px;">
-        <ui:VisualElement name="ve-background" />
-        <ui:VisualElement name="ve-image" style="background-image: url(&apos;project://database/Assets/Sprites/Innawoods/Weapons/Assault/62.jpg?fileID=2800000&amp;guid=2584b5d04de0ed640933e32fcb484272&amp;type=3#62&apos;); -unity-background-scale-mode: scale-to-fit; width: 400px; height: 200px; rotate: 0; transform-origin: left top;" />
-        <ui:Label text="My name" name="label-name" />
-        <ui:VisualElement name="ve-border" />
-    </InventoryItemElement>
-</ui:UXML>
